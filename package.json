@@ -1,0 +1,29 @@
+{
+    "name": "pes-http",
+    "version": "1.0.0",
+    "title": "http steps",
+    "description": "https://github.com/mbenzekri/pes-http",
+    "main": "./steps/tests.js",
+    "scripts": {
+        "build": "tsc",
+        "start": "node ./steps/test.js",
+        "doc": "node ./node_modules/cef-lib/docgen.js HttpGet",
+        "test": "node ./steps/test.js"
+    },
+    "author": "",
+    "license": "UNLICENSED",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/mbenzekri/cef-fs.git"
+    },
+    "dependencies": {
+        "got": "^9.6.0"
+    },
+    "devDependencies": {
+        "@types/got": "^9.4.4",
+        "@types/node": "^12.0.1"
+    },
+    "peerDependencies": {
+        "cef-lib": "github:mbenzekri/cef-lib"
+    }
+}
