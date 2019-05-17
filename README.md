@@ -6,9 +6,9 @@
 >`npm install mbenzekri/cef-fs`
 
 # included steps 
->- [HttpGet](#httpget-get-data-to-from-url-and-write-it-to-file) : get data to from url and write it to file
+>- [HttpDownload](#httpdownload-get-data-to-from-url-and-write-it-to-file) : get data to from url and write it to file
 ---
-# HttpGet get data to from url and write it to file
+# HttpDownload get data to from url and write it to file
 >
 
 ## goal
@@ -21,7 +21,13 @@
 
 ---
 ## parameters
+> **directory** *{boolean}* -- the directory where to put downloaded files  -- default = `true`
+> 
+
 > **url** *{string}* -- the url to download  -- default = `https://www.google.com`
+> 
+
+> **filename** *{boolean}* -- the target filename for the downloaded resource  -- default = `true`
 > 
 
 > **createdir** *{boolean}* -- if true create the missing directories for created file  -- default = `true`

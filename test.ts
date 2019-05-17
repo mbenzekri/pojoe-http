@@ -2,9 +2,9 @@
 import * as cef from 'cef-lib'
 
 const flowchart: cef.Flowchart = {
-    name: 'Testing HttpGet ',
-    title: 'Testing HttpGet',
-    desc: 'Testing HttpGet',
+    name: 'Testing HttpDownload ',
+    title: 'Testing HttpDownload',
+    desc: 'Testing HttpDownload',
     args: {},
     globals: {
         PATH : { value: 'D:/data', type: 'string', desc: 'the data root dir' }
