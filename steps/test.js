@@ -3,9 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /* eslint-disable no-template-curly-in-string */
 const cef = require("cef-lib");
 const flowchart = {
-    name: 'Testing HttpGet ',
-    title: 'Testing HttpGet',
-    desc: 'Testing HttpGet',
+    name: 'Testing HttpDownload ',
+    title: 'Testing HttpDownload',
+    desc: 'Testing HttpDownload',
     args: {},
     globals: {
         PATH: { value: 'D:/data', type: 'string', desc: 'the data root dir' }

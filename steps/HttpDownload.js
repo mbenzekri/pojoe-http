@@ -20,10 +20,20 @@ exports.declaration = {
         "allow see got options ...",
     ],
     parameters: {
+        'directory': {
+            title: 'the directory where to put downloaded files',
+            type: 'boolean',
+            default: 'true',
+        },
         'url': {
             title: 'the url to download',
             type: 'string',
             default: 'https://www.google.com'
+        },
+        'filename': {
+            title: 'the target filename for the downloaded resource',
+            type: 'boolean',
+            default: 'true',
         },
         'createdir': {
             title: 'if true create the missing directories for created file',
@@ -68,6 +78,10 @@ class HttpDownload extends cef.Step {
         return __awaiter(this, void 0, void 0, function* () {
             let pojo = yield this.input('pojos');
             while (pojo !== cef.EOF) {
+                // const url = this.params.url
+                // const file = fs.createWriteStream()
+                // got.stream(url, {})
+                // got.stream(url).pipe();
                 pojo = yield this.input('pojos');
             }
         });
