@@ -8,8 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const cef = require("cef-lib");
-exports.declaration = {
+const steps_1 = require("pojoe/steps");
+const got = require("got");
+const fs = require("fs");
+const declaration = {
     gitid: 'mbenzekri/cef-fs/steps/HttpDownload',
     title: 'get data to from url and write it to file',
     desc: 'this step get data from urls and writes corresponding data to files',
@@ -20,30 +22,25 @@ exports.declaration = {
         "allow see got options ...",
     ],
     parameters: {
-        'directory': {
-            title: 'the directory where to put downloaded files',
-            type: 'boolean',
-            default: 'true',
-        },
         'url': {
             title: 'the url to download',
-            type: 'string',
-            default: 'https://www.google.com'
+            type: 'url',
+            default: 'https://github.com/mbenzekri/pojoe-http/raw/master/README.md'
         },
         'filename': {
             title: 'the target filename for the downloaded resource',
             type: 'boolean',
-            default: 'true',
+            default: 'd:/tmp/README.md',
         },
         'createdir': {
             title: 'if true create the missing directories for created file',
             type: 'boolean',
-            default: 'true',
+            default: 'false',
         },
-        'update': {
-            title: 'if true download only if file is out of date',
-            type: 'string',
-            default: null
+        'overwite': {
+            title: 'if true overwrite existing file',
+            type: 'boolean',
+            default: 'false',
         },
     },
     inputs: {
@@ -55,39 +52,53 @@ exports.declaration = {
         'files': {
             title: 'downloaded files',
             properties: {
-                filename: { type: 'string', title: 'downloaded file name' },
-                updated: { type: 'boolean', title: 'if true downloaded file updated (was out of date)' },
+                url: { type: 'url', title: 'url of the downloaded resource' },
+                filename: { type: 'path', title: 'target file name' },
+            }
+        },
+        'errors': {
+            title: 'downloaded files',
+            properties: {
+                url: { type: 'url', title: 'url of the downloaded resource' },
+                filename: { type: 'path', title: 'target file name' },
             }
         }
     },
 };
-class HttpDownload extends cef.Step {
+class HttpDownload extends steps_1.Step {
     constructor(params) {
-        super(exports.declaration, params);
+        super(declaration, params);
         this.streams = {};
     }
-    start() {
+    streamurl(url, path) {
         return __awaiter(this, void 0, void 0, function* () {
-        });
-    }
-    end() {
-        return __awaiter(this, void 0, void 0, function* () {
+            const file = fs.createWriteStream(path.clean);
+            const stream = got.stream(url, {}).pipe(file);
+            stream.on("close", () => {
+            });
+            stream.on("error", (err) => {
+                this.error(`fail to write file ${path.clean} due to ${err.message}`);
+            });
         });
     }
     doit() {
         return __awaiter(this, void 0, void 0, function* () {
-            let pojo = yield this.input('pojos');
-            while (pojo !== cef.EOF) {
-                // const url = this.params.url
-                // const file = fs.createWriteStream()
-                // got.stream(url, {})
-                // got.stream(url).pipe();
-                pojo = yield this.input('pojos');
+            let pojo = yield this.input('urls');
+            while (pojo !== steps_1.EOP) {
+                const url = this.params.url;
+                const path = this.params.filename;
+                path.exists && this.error(`${path.clean} is an existing file or directory no overwriting`);
+                if (!path.dirname.exists) {
+                    !this.params.createdir && this.error(`${path.dirname} didnot exist (no createdir)`);
+                    fs.mkdirSync(path.dirname.clean, { recursive: true });
+                }
+                yield this.streamurl(url, path);
+                pojo = yield this.input('urls');
             }
         });
     }
 }
-function create(params) { return new HttpDownload(params); }
-exports.create = create;
-;
+HttpDownload.declaration = declaration;
+exports.HttpDownload = HttpDownload;
+steps_1.Step.register(HttpDownload);
 //# sourceMappingURL=HttpDownload.js.map

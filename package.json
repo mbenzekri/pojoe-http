@@ -1,21 +1,31 @@
 {
-    "name": "pes-http",
+    "name": "pojoe-http",
     "version": "1.0.0",
     "title": "http steps",
-    "description": "https://github.com/mbenzekri/pes-http",
-    "main": "./steps/tests.js",
+    "description": "this module provides Pojoe steps for http/https calls (uses got)",
+    "main": "./node_modules/pojoe/steps/pojoetest.js",
+    "config": {
+        "steps": [
+            "HttpDownload"
+        ]
+    },
     "scripts": {
         "build": "tsc",
-        "start": "node ./steps/test.js",
-        "doc": "node ./node_modules/cef-lib/docgen.js HttpGet",
-        "test": "node ./steps/test.js"
+        "predoc": "tsc",
+        "doc": "node ./node_modules/pojoe/steps/pojoedoc",
+        "pretest": "npm run doc",
+        "test": "node ./node_modules/pojoe/steps/pojoetest"
     },
-    "author": "",
-    "license": "UNLICENSED",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/mbenzekri/cef-fs.git"
+        "url": "git+https://github.com/mbenzekri/pojoe-http.git"
     },
+    "author": "Mohamed Ben Zekri",
+    "license": "UNLICENSED",
+    "bugs": {
+        "url": "https://github.com/mbenzekri/pojoe-http/issues"
+    },
+    "homepage": "https://github.com/mbenzekri/pojoe-http#readme",
     "dependencies": {
         "got": "^9.6.0"
     },
@@ -24,6 +34,6 @@
         "@types/node": "^12.0.1"
     },
     "peerDependencies": {
-        "cef-lib": "github:mbenzekri/cef-lib"
+        "pojoe": "github:mbenzekri/pojoe"
     }
 }
