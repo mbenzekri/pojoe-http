@@ -12,7 +12,7 @@ const steps_1 = require("pojoe/steps");
 const got = require("got");
 const fs = require("fs");
 const declaration = {
-    gitid: 'mbenzekri/cef-fs/steps/HttpDownload',
+    gitid: 'mbenzekri/pojoe-http/steps/HttpDownload',
     title: 'get data to from url and write it to file',
     desc: 'this step get data from urls and writes corresponding data to files',
     features: [
@@ -21,6 +21,28 @@ const declaration = {
         "allow update only if file is out of date",
         "allow see got options ...",
     ],
+    inputs: {
+        'urls': {
+            title: 'pojos from which urls to download will be extracted'
+        }
+    },
+    outputs: {
+        'downloaded': {
+            title: 'downloaded files',
+            properties: {
+                url: { type: 'url', title: 'url of the downloaded resource' },
+                filename: { type: 'path', title: 'target file name' },
+            }
+        },
+        'failed': {
+            title: 'failed to download files',
+            properties: {
+                url: { type: 'url', title: 'url of the downloaded resource' },
+                filename: { type: 'path', title: 'target file name' },
+                reason: { type: 'string', title: 'reason for failure' },
+            }
+        }
+    },
     parameters: {
         'url': {
             title: 'the url to download',
@@ -29,7 +51,7 @@ const declaration = {
         },
         'filename': {
             title: 'the target filename for the downloaded resource',
-            type: 'boolean',
+            type: 'path',
             default: 'd:/tmp/README.md',
         },
         'createdir': {
@@ -43,62 +65,75 @@ const declaration = {
             default: 'false',
         },
     },
-    inputs: {
-        'urls': {
-            title: 'pojos with the infos to construct the url'
-        }
-    },
-    outputs: {
-        'files': {
-            title: 'downloaded files',
-            properties: {
-                url: { type: 'url', title: 'url of the downloaded resource' },
-                filename: { type: 'path', title: 'target file name' },
-            }
-        },
-        'errors': {
-            title: 'downloaded files',
-            properties: {
-                url: { type: 'url', title: 'url of the downloaded resource' },
-                filename: { type: 'path', title: 'target file name' },
-            }
-        }
-    },
 };
+const opt = {};
+function streamurl(url, path) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            const file = fs.createWriteStream(path);
+            try {
+                const stream = got.stream(url.toString(), {});
+                stream.on("end", () => {
+                    resolve();
+                });
+                stream.on("error", (err) => {
+                    reject(`fail to write file "${path}" due to ${err.message}`);
+                });
+                stream.pipe(file);
+            }
+            catch (err) {
+                reject(`fail to got.stream() url "${url}" to file "${path}" due to ${err.message}`);
+            }
+        });
+    });
+}
 class HttpDownload extends steps_1.Step {
     constructor(params) {
         super(declaration, params);
-        this.streams = {};
     }
-    streamurl(url, path) {
+    donwload() {
         return __awaiter(this, void 0, void 0, function* () {
-            const file = fs.createWriteStream(path.clean);
-            const stream = got.stream(url, {}).pipe(file);
-            stream.on("close", () => {
-            });
-            stream.on("error", (err) => {
-                this.error(`fail to write file ${path.clean} due to ${err.message}`);
-            });
+            const url = this.params.url.toString();
+            const filename = this.params.filename;
+            const createdir = this.params.createdir;
+            const overwite = this.params.overwite;
+            if (filename.exists && !overwite) {
+                return this.output('failed', { url, filename, reason: `${filename.toString()} is an existing file/directory and no overwriting allowed` });
+            }
+            else {
+                const dirname = filename.dirname;
+                if (!dirname.exists && createdir) {
+                    return this.output('failed', { url, filename, reason: `directory ${dirname} doesn't exist and no create directory allowed` });
+                }
+                else {
+                    // create dir
+                    fs.mkdirSync(dirname.pathnormalize, { recursive: true });
+                }
+                return streamurl(url, filename.pathnormalize)
+                    .then(_ => {
+                    return this.output('downloaded', { url, filename });
+                }).catch(err => {
+                    return this.output('failed', { url, filename, reason: err });
+                });
+            }
         });
     }
-    doit() {
+    input(inport, pojo) {
         return __awaiter(this, void 0, void 0, function* () {
-            let pojo = yield this.input('urls');
-            while (pojo !== steps_1.EOP) {
-                const url = this.params.url;
-                const path = this.params.filename;
-                path.exists && this.error(`${path.clean} is an existing file or directory no overwriting`);
-                if (!path.dirname.exists) {
-                    !this.params.createdir && this.error(`${path.dirname} didnot exist (no createdir)`);
-                    fs.mkdirSync(path.dirname.clean, { recursive: true });
-                }
-                yield this.streamurl(url, path);
-                pojo = yield this.input('urls');
+            if (inport === 'urls') {
+                yield this.donwload();
+            }
+        });
+    }
+    process() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.inport('urls').isconnected) {
+                yield this.donwload();
             }
         });
     }
 }
 HttpDownload.declaration = declaration;
 exports.HttpDownload = HttpDownload;
-steps_1.Step.register(HttpDownload);
+module.exports = steps_1.Step.register(HttpDownload);
 //# sourceMappingURL=HttpDownload.js.map

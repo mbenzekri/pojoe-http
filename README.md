@@ -1,13 +1,12 @@
 
-# pes-http: http steps
->https://github.com/mbenzekri/pes-http
+# pojoe-http: http Pojoe steps
+>this module provides Pojoe steps for http/https calls (uses got)
 # install
 
->`npm install mbenzekri/cef-fs`
+>`npm install mbenzekri/pojoe-http`
 
 # included steps 
 >- [HttpDownload](#httpdownload-get-data-to-from-url-and-write-it-to-file) : get data to from url and write it to file
----
 # HttpDownload get data to from url and write it to file
 >
 
@@ -21,30 +20,29 @@
 
 ---
 ## parameters
-> **directory** *{boolean}* -- the directory where to put downloaded files  -- default = `true`
+> **url** *{url}* -- the url to download  -- default = `https://github.com/mbenzekri/pojoe-http/raw/master/README.md`
 > 
-
-> **url** *{string}* -- the url to download  -- default = `https://www.google.com`
+> **filename** *{path}* -- the target filename for the downloaded resource  -- default = `d:/tmp/README.md`
 > 
-
-> **filename** *{boolean}* -- the target filename for the downloaded resource  -- default = `true`
+> **createdir** *{boolean}* -- if true create the missing directories for created file  -- default = `false`
 > 
-
-> **createdir** *{boolean}* -- if true create the missing directories for created file  -- default = `true`
+> **overwite** *{boolean}* -- if true overwrite existing file  -- default = `false`
 > 
-
-> **update** *{string}* -- if true download only if file is out of date  -- default = `null`
-> 
-
 ## inputs
->- **urls** -- pojos with the infos to construct the url 
+>- **urls** -- pojos from which urls to download will be extracted 
 
 ## outputs
->- **files** -- downloaded files 
+>- **downloaded** -- downloaded files 
 >> provided properties: 
->>- **filename** *{string}* -- downloaded file name
->>- **updated** *{boolean}* -- if true downloaded file updated (was out of date)
+>>- **url** *{url}* -- url of the downloaded resource
+>>- **filename** *{path}* -- target file name
+>- **failed** -- failed to download files 
+>> provided properties: 
+>>- **url** *{url}* -- url of the downloaded resource
+>>- **filename** *{path}* -- target file name
+>>- **reason** *{string}* -- reason for failure
 
 
 ---
 
+---

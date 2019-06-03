@@ -11,8 +11,13 @@
             "program": "${workspaceFolder}/node_modules/pojoe/steps/pojoetest",
             "preLaunchTask": "tsc: build - tsconfig.json",
             "cwd":"${workspaceFolder}",
+            "port": 49534,
             "outFiles": [
                 "${workspaceFolder}//**/*.js"
+            ],
+            "protocol": "inspector",
+            "runtimeArgs": [
+                "--inspect-brk=49534"
             ],
             "args": []
         }

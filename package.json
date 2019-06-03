@@ -1,7 +1,7 @@
 {
     "name": "pojoe-http",
     "version": "1.0.0",
-    "title": "http steps",
+    "title": "http Pojoe steps",
     "description": "this module provides Pojoe steps for http/https calls (uses got)",
     "main": "./node_modules/pojoe/steps/pojoetest.js",
     "config": {
