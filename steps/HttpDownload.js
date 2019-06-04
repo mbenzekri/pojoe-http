@@ -11,15 +11,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const steps_1 = require("pojoe/steps");
 const got = require("got");
 const fs = require("fs");
+const path_1 = require("path");
+const uuid = require("uuid/v4");
 const declaration = {
     gitid: 'mbenzekri/pojoe-http/steps/HttpDownload',
     title: 'get data to from url and write it to file',
-    desc: 'this step get data from urls and writes corresponding data to files',
+    desc: 'this step get data from urls and writes corresponding resources to files',
     features: [
-        "allow writing data for each pojo url inputed",
+        "allow download urls resources for each inputed pojo url",
         "allow full directory path creation if missing",
         "allow update only if file is out of date",
-        "allow see got options ...",
+        "allow do not overwrite existing files",
+        "output success and failure urls downloadeds/files writtens",
+        "output when success indicates update or not",
     ],
     inputs: {
         'urls': {
@@ -30,15 +34,16 @@ const declaration = {
         'downloaded': {
             title: 'downloaded files',
             properties: {
-                url: { type: 'url', title: 'url of the downloaded resource' },
-                filename: { type: 'path', title: 'target file name' },
+                url: { type: 'string', title: 'url of the downloaded resource' },
+                filename: { type: 'string', title: 'target file name' },
+                updated: { type: 'boolean', title: 'true if resource has been updated' },
             }
         },
         'failed': {
             title: 'failed to download files',
             properties: {
-                url: { type: 'url', title: 'url of the downloaded resource' },
-                filename: { type: 'path', title: 'target file name' },
+                url: { type: 'string', title: 'url of the downloaded resource' },
+                filename: { type: 'string', title: 'target file name' },
                 reason: { type: 'string', title: 'reason for failure' },
             }
         }
@@ -64,26 +69,43 @@ const declaration = {
             type: 'boolean',
             default: 'false',
         },
+        'update': {
+            title: 'if true update only if file modification date is older than url resource ',
+            type: 'boolean',
+            default: 'true',
+        },
     },
 };
-const opt = {};
 function streamurl(url, path) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
-            const file = fs.createWriteStream(path);
-            try {
+            const dirname = path_1.dirname(path);
+            const tmpfile = `${dirname}/${uuid()}.tmp`;
+            got.head(url)
+                .then(resp => {
+                const flast = fs.existsSync(path) && fs.statSync(path).mtimeMs;
+                const ulast = Date.parse(resp.headers["last-modified"]);
+                if (flast && flast >= ulast)
+                    return resolve(false);
+                const file = fs.createWriteStream(tmpfile);
                 const stream = got.stream(url.toString(), {});
                 stream.on("end", () => {
-                    resolve();
+                    fs.rename(tmpfile, path, err => {
+                        fs.existsSync(tmpfile) && fs.unlink(tmpfile, _ => { });
+                        if (!err)
+                            return resolve(true);
+                        reject(new Error(`fail to write file "${path}" due to ${err.message}`));
+                    });
                 });
                 stream.on("error", (err) => {
-                    reject(`fail to write file "${path}" due to ${err.message}`);
+                    fs.existsSync(tmpfile) && fs.unlink(tmpfile, _ => { });
+                    reject(new Error(`fail to download url "${url}" to file ${path} due to ${err.message}`));
                 });
                 stream.pipe(file);
-            }
-            catch (err) {
-                reject(`fail to got.stream() url "${url}" to file "${path}" due to ${err.message}`);
-            }
+            }).catch(e => {
+                fs.existsSync(tmpfile) && fs.unlink(tmpfile, _ => { });
+                reject(new Error(`fail to download url "${url}" to file ${path} due to ${e.message}`));
+            });
         });
     });
 }
@@ -109,11 +131,11 @@ class HttpDownload extends steps_1.Step {
                     // create dir
                     fs.mkdirSync(dirname.pathnormalize, { recursive: true });
                 }
-                return streamurl(url, filename.pathnormalize)
-                    .then(_ => {
-                    return this.output('downloaded', { url, filename });
+                return streamurl(url.toString(), filename.pathnormalize)
+                    .then(updated => {
+                    return this.output('downloaded', { url, filename, updated });
                 }).catch(err => {
-                    return this.output('failed', { url, filename, reason: err });
+                    return this.output('failed', { url, filename, reason: err.message });
                 });
             }
         });

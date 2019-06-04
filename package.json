@@ -27,7 +27,8 @@
     },
     "homepage": "https://github.com/mbenzekri/pojoe-http#readme",
     "dependencies": {
-        "got": "^9.6.0"
+        "got": "^9.6.0",
+        "uuid": "^3.3.2"
     },
     "devDependencies": {
         "@types/got": "^9.4.4",

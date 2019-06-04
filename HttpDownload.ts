@@ -2,16 +2,20 @@ import { Declaration, Step, ParamsMap, EOP } from 'pojoe/steps'
 import { Url, Path } from 'pojoe/steps/types'
 import * as got from 'got'
 import * as fs from 'fs'
+import { dirname as pathdirname } from 'path'
+import * as uuid from 'uuid/v4'
 
 const declaration: Declaration = {
     gitid: 'mbenzekri/pojoe-http/steps/HttpDownload',
     title: 'get data to from url and write it to file',
-    desc: 'this step get data from urls and writes corresponding data to files',
+    desc: 'this step get data from urls and writes corresponding resources to files',
     features: [
-        "allow writing data for each pojo url inputed",
+        "allow download urls resources for each inputed pojo url",
         "allow full directory path creation if missing",
         "allow update only if file is out of date",
-        "allow see got options ...",
+        "allow do not overwrite existing files",
+        "output success and failure urls downloadeds/files writtens",
+        "output when success indicates update or not",
     ],
     inputs: {
         'urls': {
@@ -22,19 +26,20 @@ const declaration: Declaration = {
         'downloaded': {
             title: 'downloaded files',
             properties: {
-                url: { type: 'url', title: 'url of the downloaded resource' },
-                filename: { type: 'path', title: 'target file name' },
+                url: { type: 'string', title: 'url of the downloaded resource' },
+                filename: { type: 'string', title: 'target file name' },
+                updated: { type: 'boolean', title: 'true if resource has been updated' },
             }
         },
         'failed': {
             title: 'failed to download files',
             properties: {
-                url: { type: 'url', title: 'url of the downloaded resource' },
-                filename: { type: 'path', title: 'target file name' },
+                url: { type: 'string', title: 'url of the downloaded resource' },
+                filename: { type: 'string', title: 'target file name' },
                 reason: { type: 'string', title: 'reason for failure' },
             }
         }
-    },    
+    },
     parameters: {
         'url': {
             title: 'the url to download',
@@ -56,29 +61,44 @@ const declaration: Declaration = {
             type: 'boolean',
             default: 'false',
         },
+        'update': {
+            title: 'if true update only if file modification date is older than url resource ',
+            type: 'boolean',
+            default: 'true',
+        },
     },
 
 }
 
-const opt: got.GotOptions<string> =  {}
-async function streamurl(url: string, path: string) {
-    return new Promise((resolve,reject)=> {
-        const file = fs.createWriteStream(path)
-        try {
+async function streamurl(url: string, path: string):Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
+        const dirname = pathdirname(path)
+        const tmpfile = `${dirname}/${uuid()}.tmp`
+        got.head(url)
+        .then(resp => {
+            const flast = fs.existsSync(path) && fs.statSync(path).mtimeMs
+            const ulast = Date.parse(resp.headers["last-modified"])
+            if (flast && flast >= ulast) return resolve(false)
+            const file = fs.createWriteStream(tmpfile)
             const stream = got.stream(url.toString(), {})
             stream.on("end", () => {
-                resolve()
+                fs.rename(tmpfile, path, err => {
+                    fs.existsSync(tmpfile) && fs.unlink(tmpfile, _ => { })
+                    if (!err) return resolve(true)
+                    reject(new Error(`fail to write file "${path}" due to ${err.message}`))
+                })
             })
             stream.on("error", (err) => {
-                reject(`fail to write file "${path}" due to ${err.message}`)
+                fs.existsSync(tmpfile) && fs.unlink(tmpfile, _ => { })
+                reject(new Error(`fail to download url "${url}" to file ${path} due to ${err.message}`))
             })
             stream.pipe(file)
-        } catch(err) {
-            reject(`fail to got.stream() url "${url}" to file "${path}" due to ${err.message}`)
-        }
+        }).catch(e => {
+            fs.existsSync(tmpfile) && fs.unlink(tmpfile, _ => { })
+            reject(new Error(`fail to download url "${url}" to file ${path} due to ${e.message}`))
+        })
     })
 }
-
 
 export class HttpDownload extends Step {
     static readonly declaration = declaration
@@ -86,26 +106,26 @@ export class HttpDownload extends Step {
         super(declaration, params)
     }
     async donwload() {
-        const url: string = this.params.url.toString()
+        const url: Url = this.params.url.toString()
         const filename: Path = this.params.filename
         const createdir: boolean = this.params.createdir
         const overwite: boolean = this.params.overwite
         if (filename.exists && !overwite) {
-            return this.output('failed', { url, filename, reason: `${filename.toString()} is an existing file/directory and no overwriting allowed`})
+            return this.output('failed', { url, filename, reason: `${filename.toString()} is an existing file/directory and no overwriting allowed` })
         } else {
-            const dirname = filename.dirname   
-            if(!dirname.exists && createdir) {
-                return this.output('failed', { url, filename, reason: `directory ${dirname} doesn't exist and no create directory allowed`})
+            const dirname = filename.dirname
+            if (!dirname.exists && createdir) {
+                return this.output('failed', { url, filename, reason: `directory ${dirname} doesn't exist and no create directory allowed` })
             } else {
                 // create dir
                 fs.mkdirSync(dirname.pathnormalize, { recursive: true })
             }
-            return streamurl(url,filename.pathnormalize)
-            .then( _ => {
-                return this.output('downloaded',{ url, filename})
-            }).catch(err => {
-                return this.output('failed', { url, filename, reason: err})
-            })
+            return streamurl(url.toString(), filename.pathnormalize)
+                .then(updated => {
+                    return this.output('downloaded', { url, filename, updated })
+                }).catch(err => {
+                    return this.output('failed', { url, filename, reason: err.message })
+                })
         }
     }
 
@@ -114,10 +134,10 @@ export class HttpDownload extends Step {
             await this.donwload()
         }
     }
-    async process() { 
+    async process() {
         if (!this.inport('urls').isconnected) {
             await this.donwload()
-        } 
+        }
     }
 
 }
